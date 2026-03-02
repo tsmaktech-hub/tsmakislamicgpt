@@ -189,17 +189,17 @@ export default function App() {
         <motion.div 
           initial={{ opacity: 0, scale: 0.95 }}
           animate={{ opacity: 1, scale: 1 }}
-          className="w-full max-w-md glass-panel p-8 rounded-3xl shadow-2xl"
+          className="w-full max-w-sm glass-panel p-6 rounded-3xl shadow-2xl"
         >
-          <div className="text-center mb-8">
-            <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-islamic-green/80 text-white mb-4 shadow-lg backdrop-blur-md">
-              <Moon className="w-8 h-8 text-islamic-gold" />
+          <div className="text-center mb-6">
+            <div className="inline-flex items-center justify-center w-14 h-14 rounded-2xl bg-islamic-green/80 text-white mb-3 shadow-lg backdrop-blur-md">
+              <Moon className="w-7 h-7 text-islamic-gold" />
             </div>
-            <h1 className="text-2xl font-sans font-bold text-white">Tsmak-Islamic GPT</h1>
-            <p className="text-white/80 mt-2 text-sm">Your companion for Islamic knowledge</p>
+            <h1 className="text-xl font-sans font-bold text-white">Tsmak-Islamic GPT</h1>
+            <p className="text-white/80 mt-1 text-xs">Your companion for Islamic knowledge</p>
           </div>
 
-          <form onSubmit={handleAuth} className="space-y-4">
+          <form onSubmit={handleAuth} className="space-y-3">
             {authMode === 'signup' && (
               <div>
                 <label className="block text-xs font-semibold text-white/90 mb-1 uppercase tracking-wider">Full Name</label>
@@ -208,7 +208,7 @@ export default function App() {
                   required
                   value={name}
                   onChange={(e) => setName(e.target.value)}
-                  className="w-full px-4 py-2.5 rounded-xl bg-white/10 border border-white/20 text-white placeholder:text-white/40 focus:ring-2 focus:ring-islamic-gold focus:border-transparent outline-none transition-all text-sm"
+                  className="w-full px-4 py-2 rounded-xl bg-white/10 border border-white/20 text-white placeholder:text-white/40 focus:ring-2 focus:ring-islamic-gold focus:border-transparent outline-none transition-all text-sm"
                   placeholder="Abdullah Ahmad"
                 />
               </div>
@@ -220,7 +220,7 @@ export default function App() {
                 required
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                className="w-full px-4 py-2.5 rounded-xl bg-white/10 border border-white/20 text-white placeholder:text-white/40 focus:ring-2 focus:ring-islamic-gold focus:border-transparent outline-none transition-all text-sm"
+                className="w-full px-4 py-2 rounded-xl bg-white/10 border border-white/20 text-white placeholder:text-white/40 focus:ring-2 focus:ring-islamic-gold focus:border-transparent outline-none transition-all text-sm"
                 placeholder="you@example.com"
               />
             </div>
@@ -231,7 +231,7 @@ export default function App() {
                 required
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                className="w-full px-4 py-2.5 rounded-xl bg-white/10 border border-white/20 text-white placeholder:text-white/40 focus:ring-2 focus:ring-islamic-gold focus:border-transparent outline-none transition-all text-sm"
+                className="w-full px-4 py-2 rounded-xl bg-white/10 border border-white/20 text-white placeholder:text-white/40 focus:ring-2 focus:ring-islamic-gold focus:border-transparent outline-none transition-all text-sm"
                 placeholder="••••••••"
               />
             </div>
@@ -243,16 +243,16 @@ export default function App() {
             <button
               type="submit"
               disabled={loading}
-              className="w-full bg-islamic-gold text-islamic-green py-3 rounded-xl font-bold hover:bg-yellow-500 transition-colors flex items-center justify-center gap-2 disabled:opacity-70 shadow-lg"
+              className="w-full bg-islamic-gold text-islamic-green py-2.5 rounded-xl font-bold hover:bg-yellow-500 transition-colors flex items-center justify-center gap-2 disabled:opacity-70 shadow-lg text-sm"
             >
               {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : (authMode === 'login' ? 'Sign In' : 'Create Account')}
             </button>
 
-            <div className="relative my-6">
+            <div className="relative my-4">
               <div className="absolute inset-0 flex items-center">
                 <div className="w-full border-t border-white/10"></div>
               </div>
-              <div className="relative flex justify-center text-xs uppercase">
+              <div className="relative flex justify-center text-[10px] uppercase">
                 <span className="px-2 text-white/40">Or continue with</span>
               </div>
             </div>
@@ -260,7 +260,7 @@ export default function App() {
             <button
               type="button"
               onClick={handleGoogleLogin}
-              className="w-full bg-white/5 border border-white/10 text-white py-3 rounded-xl font-semibold hover:bg-white/10 transition-all flex items-center justify-center gap-3"
+              className="w-full bg-white/5 border border-white/10 text-white py-2.5 rounded-xl font-semibold hover:bg-white/10 transition-all flex items-center justify-center gap-3 text-sm"
             >
               <svg className="w-5 h-5" viewBox="0 0 24 24">
                 <path
@@ -284,10 +284,10 @@ export default function App() {
             </button>
           </form>
 
-          <div className="mt-6 text-center">
+          <div className="mt-4 text-center">
             <button
               onClick={() => setAuthMode(authMode === 'login' ? 'signup' : 'login')}
-              className="text-white/90 text-sm font-semibold hover:text-white hover:underline transition-colors"
+              className="text-white/90 text-[11px] font-semibold hover:text-white hover:underline transition-colors"
             >
               {authMode === 'login' ? "Don't have an account? Sign up" : "Already have an account? Sign in"}
             </button>
