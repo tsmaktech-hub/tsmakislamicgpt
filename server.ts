@@ -11,7 +11,22 @@ const __dirname = path.dirname(__filename);
 
 // Use /tmp for SQLite on Vercel as it's the only writable directory
 const dbPath = process.env.VERCEL ? path.join("/tmp", "islamic_gpt.db") : "islamic_gpt.db";
-const db = new Database(dbPath);
+let db: any;
+
+try {
+  db = new Database(dbPath);
+} catch (err) {
+  console.error("Database initialization failed. Using mock database for Vercel demo.", err);
+  // Mock database for Vercel demo if native better-sqlite3 fails
+  db = {
+    exec: () => {},
+    prepare: () => ({
+      get: () => null,
+      all: () => [],
+      run: () => ({ lastInsertRowid: 1 })
+    })
+  };
+}
 const JWT_SECRET = process.env.JWT_SECRET || "tsmak-secret-key-123";
 const GOOGLE_CLIENT_ID = process.env.GOOGLE_CLIENT_ID;
 const GOOGLE_CLIENT_SECRET = process.env.GOOGLE_CLIENT_SECRET;
@@ -187,14 +202,13 @@ async function createServer() {
       appType: "spa",
     });
     app.use(vite.middlewares);
-  } else {
-    // Serve static files in production
+  } else if (!process.env.VERCEL) {
+    // Serve static files in production ONLY if not on Vercel
+    // Vercel handles static serving via vercel.json rewrites
     const distPath = path.join(__dirname, "dist");
     app.use(express.static(distPath));
     
-    // For any other request, serve the index.html
     app.get("*", (req, res) => {
-      // Skip API routes
       if (req.path.startsWith("/api/")) return res.status(404).end();
       res.sendFile(path.join(distPath, "index.html"));
     });
