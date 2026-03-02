@@ -9,7 +9,9 @@ import { fileURLToPath } from "url";
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-const db = new Database("islamic_gpt.db");
+// Use /tmp for SQLite on Vercel as it's the only writable directory
+const dbPath = process.env.VERCEL ? path.join("/tmp", "islamic_gpt.db") : "islamic_gpt.db";
+const db = new Database(dbPath);
 const JWT_SECRET = process.env.JWT_SECRET || "tsmak-secret-key-123";
 const GOOGLE_CLIENT_ID = process.env.GOOGLE_CLIENT_ID;
 const GOOGLE_CLIENT_SECRET = process.env.GOOGLE_CLIENT_SECRET;
