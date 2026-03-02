@@ -73,39 +73,6 @@ export default function App() {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages, isTyping]);
 
-  useEffect(() => {
-    const handleMessage = (event: MessageEvent) => {
-      // Validate origin is from AI Studio preview or localhost
-      const origin = event.origin;
-      if (!origin.endsWith('.run.app') && !origin.includes('localhost')) {
-        return;
-      }
-      if (event.data?.type === 'OAUTH_AUTH_SUCCESS') {
-        const { token, user } = event.data;
-        setUser(user);
-        setIsLoggedIn(true);
-        fetchHistory(token);
-        (window as any)._sessionToken = token;
-      }
-    };
-    window.addEventListener('message', handleMessage);
-    return () => window.removeEventListener('message', handleMessage);
-  }, []);
-
-  const handleGoogleLogin = async () => {
-    try {
-      const res = await fetch('/api/auth/google/url');
-      const data = await res.json();
-      if (!res.ok) {
-        setError(data.error || 'Failed to initiate Google login');
-        return;
-      }
-      window.open(data.url, 'google_oauth', 'width=500,height=600');
-    } catch (err) {
-      setError('Failed to initiate Google login');
-    }
-  };
-
   const handleAuth = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
@@ -195,7 +162,7 @@ export default function App() {
             <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-islamic-green/80 text-white mb-4 shadow-lg backdrop-blur-md">
               <Moon className="w-8 h-8 text-islamic-gold" />
             </div>
-            <h1 className="text-2xl font-sans font-bold text-white">Tsmak-Islamic gpt</h1>
+            <h1 className="text-2xl font-sans font-bold text-white">Tsmak Islamic GPT</h1>
             <p className="text-white/80 mt-2 text-sm">Your companion for Islamic knowledge</p>
           </div>
 
@@ -249,37 +216,6 @@ export default function App() {
             </button>
           </form>
 
-          <div className="mt-4 flex items-center gap-4">
-            <div className="flex-1 h-px bg-white/20"></div>
-            <span className="text-white/40 text-[10px] font-bold uppercase tracking-widest">Or</span>
-            <div className="flex-1 h-px bg-white/20"></div>
-          </div>
-
-          <button
-            onClick={handleGoogleLogin}
-            className="mt-4 w-full bg-white/10 border border-white/20 text-white py-3 rounded-xl font-bold hover:bg-white/20 transition-all flex items-center justify-center gap-3 shadow-lg backdrop-blur-md"
-          >
-            <svg className="w-5 h-5" viewBox="0 0 24 24">
-              <path
-                fill="currentColor"
-                d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"
-              />
-              <path
-                fill="currentColor"
-                d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"
-              />
-              <path
-                fill="currentColor"
-                d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l3.66-2.84z"
-              />
-              <path
-                fill="currentColor"
-                d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"
-              />
-            </svg>
-            Continue with Google
-          </button>
-
           <div className="mt-6 text-center">
             <button
               onClick={() => setAuthMode(authMode === 'login' ? 'signup' : 'login')}
@@ -302,7 +238,7 @@ export default function App() {
             <div className="p-2 bg-white/10 rounded-lg">
               <Moon className="w-5 h-5 text-islamic-gold" />
             </div>
-            <span className="font-sans font-bold text-lg">Tsmak-Islamic gpt</span>
+            <span className="font-sans font-bold text-lg">Tsmak GPT</span>
           </div>
           
           <button 
@@ -358,7 +294,7 @@ export default function App() {
         <header className="h-14 glass-panel flex items-center justify-between px-6 z-10">
           <div className="flex items-center gap-2 md:hidden">
             <Moon className="w-5 h-5 text-islamic-green" />
-            <span className="font-sans font-bold text-base text-islamic-green">Tsmak-Islamic gpt</span>
+            <span className="font-sans font-bold text-base text-islamic-green">Tsmak GPT</span>
           </div>
           <div className="flex items-center gap-4 ml-auto">
             <div className="flex items-center gap-2 px-3 py-1 bg-islamic-green/5 rounded-full text-[10px] font-bold text-islamic-green uppercase tracking-wider">
@@ -384,7 +320,7 @@ export default function App() {
                   Assalamu Alaikum Warahmatullahi Wabarakatuh, {user?.name}
                 </h2>
                 <p className="text-slate-600 text-sm leading-relaxed">
-                  I am Tsmak-Islamic gpt. Ask me anything about Fiqh, Aqidah, or Seerah. 
+                  I am Tsmak Islamic GPT. Ask me anything about Fiqh, Aqidah, or Seerah. 
                   I provide evidence from the Quran and authentic Hadith.
                 </p>
               </div>
@@ -478,7 +414,7 @@ export default function App() {
             </button>
           </form>
           <p className="text-center text-[9px] text-slate-400 mt-4 uppercase tracking-[0.3em] font-bold">
-            Tsmak-Islamic gpt • Knowledge is Light
+            Tsmak Islamic GPT • Knowledge is Light
           </p>
         </div>
       </main>
