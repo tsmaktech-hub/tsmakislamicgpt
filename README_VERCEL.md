@@ -20,6 +20,6 @@ This project uses **SQLite** (`better-sqlite3`), which is a file-based database.
 - **Recommendation**: For production, please switch to a hosted database like **Supabase (PostgreSQL)**, **MongoDB Atlas**, or **Neon**.
 
 ## 4. Why the "Blank Page" happened?
-The blank page was likely caused by:
-- **Missing `process` polyfill**: Vite doesn't define `process` in the browser by default. I have updated `vite.config.ts` to handle this.
-- **Incorrect Routing**: Vercel might have been trying to serve the wrong directory. The new `vercel.json` fixes this.
+The blank page was caused by two critical runtime errors:
+- **`process is not defined`**: Vite doesn't define `process` in the browser. I added a polyfill in `index.html` and `vite.config.ts`.
+- **`Cannot read properties of undefined (reading '0')`**: The app was trying to access the first letter of the user's name (`user?.name[0]`) before the user was logged in. I added a safety check for this.
