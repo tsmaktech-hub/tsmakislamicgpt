@@ -6,8 +6,19 @@ To fix the "white blank page" and ensure your full-stack app works on Vercel, pl
 Ensure you have added the following environment variables in your Vercel Dashboard:
 - `GEMINI_API_KEY`: Your Google Gemini API Key.
 - `JWT_SECRET`: A random string for securing your tokens.
+- `GOOGLE_CLIENT_ID`: Your Google OAuth Client ID.
+- `GOOGLE_CLIENT_SECRET`: Your Google OAuth Client Secret.
 
 **IMPORTANT**: After adding these variables, you **MUST** trigger a new deployment (Redeploy) for the changes to take effect in the browser code.
+
+## 2. Google OAuth Setup
+To enable "Continue with Google":
+1. Go to the [Google Cloud Console](https://console.cloud.google.com/apis/credentials).
+2. Create a new "OAuth 2.0 Client ID" for a "Web application".
+3. Add the following to **Authorized redirect URIs**:
+   - `https://ais-pre-wtznyd3jspu772uths7pac-270958265231.europe-west2.run.app/api/auth/google/callback`
+   - `https://ais-dev-wtznyd3jspu772uths7pac-270958265231.europe-west2.run.app/api/auth/google/callback`
+4. Copy the Client ID and Client Secret to your Vercel environment variables.
 
 ## 2. Why the "API key must be set" error happened?
 This error occurs because the Gemini API is being called from the frontend. In Vite, environment variables are injected at **build time**. 
