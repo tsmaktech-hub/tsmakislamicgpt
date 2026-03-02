@@ -49,7 +49,13 @@ export default function App() {
   const [history, setHistory] = useState<ChatHistory[]>([]);
   const [input, setInput] = useState('');
   const [isTyping, setIsTyping] = useState(false);
+  const [apiKeyMissing, setApiKeyMissing] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const key = process.env.GEMINI_API_KEY || ((import.meta as any).env && (import.meta as any).env.VITE_GEMINI_API_KEY);
+    if (!key) setApiKeyMissing(true);
+  }, []);
 
   useEffect(() => {
     // Session persistence removed as per user request
@@ -296,6 +302,11 @@ export default function App() {
             <Moon className="w-5 h-5 text-islamic-green" />
             <span className="font-sans font-bold text-base text-islamic-green">Tsmak GPT</span>
           </div>
+          {apiKeyMissing && (
+            <div className="bg-red-500/10 border border-red-500/20 px-3 py-1 rounded-full text-[10px] font-bold text-red-600 uppercase tracking-wider animate-pulse">
+              API Key Missing
+            </div>
+          )}
           <div className="flex items-center gap-4 ml-auto">
             <div className="flex items-center gap-2 px-3 py-1 bg-islamic-green/5 rounded-full text-[10px] font-bold text-islamic-green uppercase tracking-wider">
               <ShieldCheck className="w-3 h-3" />

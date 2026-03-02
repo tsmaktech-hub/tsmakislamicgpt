@@ -1,11 +1,25 @@
-import { GoogleGenAI, Type } from "@google/genai";
+import { GoogleGenAI } from "@google/genai";
 
-const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY || "" });
+let aiInstance: GoogleGenAI | null = null;
+
+const getAI = () => {
+  if (!aiInstance) {
+    // Try to get the key from process.env (injected by Vite define) 
+    // or import.meta.env (standard Vite way)
+    const apiKey = process.env.GEMINI_API_KEY || ((import.meta as any).env && (import.meta as any).env.VITE_GEMINI_API_KEY);
+    
+    if (!apiKey) {
+      throw new Error("GEMINI_API_KEY is missing. Please ensure you have set GEMINI_API_KEY in your Vercel Environment Variables and redeployed.");
+    }
+    aiInstance = new GoogleGenAI({ apiKey });
+  }
+  return aiInstance;
+};
 
 export const generateIslamicResponse = async (prompt: string) => {
   const model = "gemini-3.1-pro-preview";
   
-  const systemInstruction = `You are "Tsmak-Islamic gpt", a highly knowledgeable and respectful Islamic AI assistant. 
+  const systemInstruction = `You are "Tsmak Islamic GPT", a highly knowledgeable and respectful Islamic AI assistant. 
 Your goal is to provide accurate answers to Islamic questions based strictly on the Quran and authentic Hadith (Sahih Bukhari, Sahih Muslim, etc.).
 
 For every answer:
@@ -23,6 +37,7 @@ For every answer:
 Structure your response clearly with headings.`;
 
   try {
+    const ai = getAI();
     const response = await ai.models.generateContent({
       model,
       contents: prompt,
@@ -33,8 +48,11 @@ Structure your response clearly with headings.`;
     });
 
     return response.text;
-  } catch (error) {
+  } catch (error: any) {
     console.error("Gemini API Error:", error);
+    if (error.message?.includes("API key")) {
+      throw new Error("Islamic GPT Error: API Key is missing or invalid. Please check your Vercel environment variables.");
+    }
     throw new Error("Failed to generate response from Islamic GPT.");
   }
 };

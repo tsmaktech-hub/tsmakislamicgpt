@@ -7,10 +7,11 @@ Ensure you have added the following environment variables in your Vercel Dashboa
 - `GEMINI_API_KEY`: Your Google Gemini API Key.
 - `JWT_SECRET`: A random string for securing your tokens.
 
-## 2. Vercel Configuration
-I have added a `vercel.json` file to your project. This file tells Vercel:
-- To use the `dist` folder for static files.
-- To route all `/api/*` requests to your serverless function.
+**IMPORTANT**: After adding these variables, you **MUST** trigger a new deployment (Redeploy) for the changes to take effect in the browser code.
+
+## 2. Why the "API key must be set" error happened?
+This error occurs because the Gemini API is being called from the frontend. In Vite, environment variables are injected at **build time**. 
+If the `GEMINI_API_KEY` was not set in Vercel **before** you deployed, the build process injected an empty string, causing the crash.
 
 ## 3. Database Warning
 This project uses **SQLite** (`better-sqlite3`), which is a file-based database. 
