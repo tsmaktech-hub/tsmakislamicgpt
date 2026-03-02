@@ -15,40 +15,40 @@ let db: any;
 
 try {
   db = new Database(dbPath);
+  // Initialize database
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS users (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      email TEXT UNIQUE,
+      password TEXT,
+      name TEXT,
+      google_id TEXT UNIQUE
+    );
+    CREATE TABLE IF NOT EXISTS chats (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      user_id INTEGER,
+      message TEXT,
+      response TEXT,
+      timestamp DATETIME DEFAULT CURRENT_TIMESTAMP,
+      FOREIGN KEY(user_id) REFERENCES users(id)
+    );
+  `);
 } catch (err) {
-  console.error("Database initialization failed. Using mock database for Vercel demo.", err);
-  // Mock database for Vercel demo if native better-sqlite3 fails
+  console.error("Database initialization failed:", err);
+  // Fallback to a mock or handle gracefully
   db = {
-    exec: () => {},
     prepare: () => ({
       get: () => null,
       all: () => [],
       run: () => ({ lastInsertRowid: 1 })
-    })
+    }),
+    exec: () => {}
   };
 }
+
 const JWT_SECRET = process.env.JWT_SECRET || "tsmak-secret-key-123";
 const GOOGLE_CLIENT_ID = process.env.GOOGLE_CLIENT_ID;
 const GOOGLE_CLIENT_SECRET = process.env.GOOGLE_CLIENT_SECRET;
-
-// Initialize database
-db.exec(`
-  CREATE TABLE IF NOT EXISTS users (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    email TEXT UNIQUE,
-    password TEXT,
-    name TEXT,
-    google_id TEXT UNIQUE
-  );
-  CREATE TABLE IF NOT EXISTS chats (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    user_id INTEGER,
-    message TEXT,
-    response TEXT,
-    timestamp DATETIME DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY(user_id) REFERENCES users(id)
-  );
-`);
 
 async function createServer() {
   const app = express();
@@ -202,13 +202,14 @@ async function createServer() {
       appType: "spa",
     });
     app.use(vite.middlewares);
-  } else if (!process.env.VERCEL) {
-    // Serve static files in production ONLY if not on Vercel
-    // Vercel handles static serving via vercel.json rewrites
+  } else {
+    // Serve static files in production
     const distPath = path.join(__dirname, "dist");
     app.use(express.static(distPath));
     
+    // For any other request, serve the index.html
     app.get("*", (req, res) => {
+      // Skip API routes
       if (req.path.startsWith("/api/")) return res.status(404).end();
       res.sendFile(path.join(distPath, "index.html"));
     });

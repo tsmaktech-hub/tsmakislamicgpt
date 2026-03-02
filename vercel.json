@@ -21,10 +21,6 @@
       "destination": "/server.ts"
     },
     {
-      "source": "/assets/(.*)",
-      "destination": "/assets/$1"
-    },
-    {
       "source": "/(.*)",
       "destination": "/index.html"
     }
