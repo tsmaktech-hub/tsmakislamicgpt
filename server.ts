@@ -9,32 +9,38 @@ import { fileURLToPath } from "url";
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-const db = new Database("islamic_gpt.db");
+const db = (() => {
+  try {
+    const database = new Database("islamic_gpt.db");
+    // Initialize database
+    database.exec(`
+      CREATE TABLE IF NOT EXISTS users (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        email TEXT UNIQUE,
+        password TEXT,
+        name TEXT
+      );
+      CREATE TABLE IF NOT EXISTS chats (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        user_id INTEGER,
+        message TEXT,
+        response TEXT,
+        timestamp DATETIME DEFAULT CURRENT_TIMESTAMP,
+        FOREIGN KEY(user_id) REFERENCES users(id)
+      );
+    `);
+    return database;
+  } catch (e) {
+    console.error("Failed to initialize SQLite database. This is expected on Vercel. Using in-memory fallback (data will not persist).");
+    return new Database(":memory:");
+  }
+})();
+
 const JWT_SECRET = process.env.JWT_SECRET || "tsmak-secret-key-123";
 
-// Initialize database
-db.exec(`
-  CREATE TABLE IF NOT EXISTS users (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    email TEXT UNIQUE,
-    password TEXT,
-    name TEXT
-  );
-  CREATE TABLE IF NOT EXISTS chats (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    user_id INTEGER,
-    message TEXT,
-    response TEXT,
-    timestamp DATETIME DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY(user_id) REFERENCES users(id)
-  );
-`);
-
-async function startServer() {
+async function createServer() {
   const app = express();
   app.use(express.json());
-
-  const PORT = 3000;
 
   // Auth Routes
   app.post("/api/auth/signup", async (req, res) => {
@@ -113,9 +119,22 @@ async function startServer() {
     });
   }
 
-  app.listen(PORT, "0.0.0.0", () => {
-    console.log(`Server running on http://localhost:${PORT}`);
+  return app;
+}
+
+export const appPromise = createServer();
+
+// For local development
+if (process.env.NODE_ENV !== "production" && !process.env.VERCEL) {
+  appPromise.then(app => {
+    const PORT = 3000;
+    app.listen(PORT, "0.0.0.0", () => {
+      console.log(`Server running on http://localhost:${PORT}`);
+    });
   });
 }
 
-startServer();
+export default async (req: any, res: any) => {
+  const app = await appPromise;
+  return app(req, res);
+};
