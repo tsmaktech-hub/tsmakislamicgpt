@@ -67,8 +67,11 @@ export default function App() {
         headers: { 'Authorization': `Bearer ${token}` }
       });
       if (res.ok) {
-        const data = await res.json();
-        setHistory(data);
+        const contentType = res.headers.get("content-type");
+        if (contentType && contentType.indexOf("application/json") !== -1) {
+          const data = await res.json();
+          setHistory(data);
+        }
       }
     } catch (err) {
       console.error("Failed to fetch history", err);
@@ -96,9 +99,15 @@ export default function App() {
   const handleGoogleLogin = async () => {
     try {
       const res = await fetch('/api/auth/google/url');
-      const { url } = await res.json();
-      if (url) {
-        window.open(url, 'google_login', 'width=500,height=600');
+      const contentType = res.headers.get("content-type");
+      if (contentType && contentType.indexOf("application/json") !== -1) {
+        const { url } = await res.json();
+        if (url) {
+          window.open(url, 'google_login', 'width=500,height=600');
+        }
+      } else {
+        const text = await res.text();
+        setError(text || "Failed to start Google login");
       }
     } catch (err) {
       console.error("Failed to start Google login", err);
@@ -120,7 +129,15 @@ export default function App() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(body),
       });
-      const data = await res.json();
+      
+      let data;
+      const contentType = res.headers.get("content-type");
+      if (contentType && contentType.indexOf("application/json") !== -1) {
+        data = await res.json();
+      } else {
+        const text = await res.text();
+        throw new Error(text || 'A server error occurred. Please check your configuration.');
+      }
       
       if (!res.ok) throw new Error(data.error || 'Authentication failed');
       
