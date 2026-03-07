@@ -3,7 +3,8 @@
 To fix the "white blank page" and ensure your full-stack app works on Vercel, please follow these steps:
 
 ## 1. Environment Variables
-Ensure you have added the following environment variables in your Vercel Dashboard:
+**CRITICAL**: You MUST add the following environment variables in your Vercel Dashboard for the app to work. Without these, the server will crash or return errors.
+
 - `GEMINI_API_KEY`: Your Google Gemini API Key.
 - `JWT_SECRET`: A random string for securing your tokens.
 - `GOOGLE_CLIENT_ID`: Your Google OAuth Client ID.
