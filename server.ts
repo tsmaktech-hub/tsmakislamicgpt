@@ -102,6 +102,29 @@ app.post("/api/chats", (req, res) => {
   }
 });
 
+app.post("/api/chats/clear", async (req, res) => {
+  const authHeader = req.headers.authorization;
+  if (!authHeader) return res.status(401).json({ error: "Unauthorized" });
+  
+  const { password } = req.body;
+  if (!password) return res.status(400).json({ error: "Password is required" });
+
+  try {
+    const token = authHeader.split(" ")[1];
+    const decoded = jwt.verify(token, JWT_SECRET) as any;
+    
+    const user = db.prepare("SELECT * FROM users WHERE id = ?").get(decoded.userId) as any;
+    if (!user || !(await bcrypt.compare(password, user.password))) {
+      return res.status(401).json({ error: "Invalid password" });
+    }
+
+    db.prepare("DELETE FROM chats WHERE user_id = ?").run(decoded.userId);
+    res.json({ success: true });
+  } catch (error) {
+    res.status(401).json({ error: "Invalid token or verification failed" });
+  }
+});
+
 // Vite middleware for development
 if (process.env.NODE_ENV !== "production") {
   const { createServer: createViteServer } = await import("vite");

@@ -11,7 +11,11 @@ import {
   ShieldCheck,
   ChevronRight,
   Loader2,
-  History
+  History,
+  Menu,
+  X,
+  Trash2,
+  Lock
 } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 import { generateIslamicResponse } from './services/geminiService';
@@ -53,8 +57,33 @@ export default function App() {
   const [input, setInput] = useState('');
   const [isTyping, setIsTyping] = useState(false);
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [showClearHistoryModal, setShowClearHistoryModal] = useState(false);
+  const [clearHistoryPassword, setClearHistoryPassword] = useState('');
+  const [clearHistoryLoading, setClearHistoryLoading] = useState(false);
+  const [clearHistoryError, setClearHistoryError] = useState('');
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inactivityTimerRef = useRef<NodeJS.Timeout | null>(null);
+
+  const handleLogout = (isAuto = false, message?: string) => {
+    if (!isAuto) {
+      const confirmed = window.confirm("Are you sure you want to logout?");
+      if (!confirmed) return;
+    }
+
+    setIsLoggedIn(false);
+    setUser(null);
+    setMessages([]);
+    setHistory([]);
+    (window as any)._sessionToken = null;
+    localStorage.removeItem('tsmak_user');
+    localStorage.removeItem('tsmak_token');
+    sessionStorage.removeItem('tsmak_refresh_count');
+    
+    if (isAuto) {
+      alert(message || "You have been logged out due to inactivity.");
+    }
+  };
 
   // Session Persistence: Check localStorage on mount
   useEffect(() => {
@@ -62,6 +91,17 @@ export default function App() {
     const savedToken = localStorage.getItem('tsmak_token');
     
     if (savedUser && savedToken) {
+      // Refresh counter logic
+      const refreshCount = parseInt(sessionStorage.getItem('tsmak_refresh_count') || '0');
+      
+      if (refreshCount >= 2) {
+        handleLogout(true, "You have been logged out after refreshing the page twice.");
+        sessionStorage.removeItem('tsmak_refresh_count');
+        return;
+      }
+      
+      sessionStorage.setItem('tsmak_refresh_count', (refreshCount + 1).toString());
+
       try {
         const userData = JSON.parse(savedUser);
         setUser(userData);
@@ -193,6 +233,7 @@ export default function App() {
       
       localStorage.setItem('tsmak_user', JSON.stringify(data.user));
       localStorage.setItem('tsmak_token', data.token);
+      sessionStorage.setItem('tsmak_refresh_count', '0');
       
       // We still need the token for subsequent API calls in this session
       (window as any)._sessionToken = data.token; 
@@ -203,22 +244,33 @@ export default function App() {
     }
   };
 
-  const handleLogout = (isAuto = false) => {
-    if (!isAuto) {
-      const confirmed = window.confirm("Are you sure you want to logout?");
-      if (!confirmed) return;
-    }
-
-    setIsLoggedIn(false);
-    setUser(null);
-    setMessages([]);
-    setHistory([]);
-    (window as any)._sessionToken = null;
-    localStorage.removeItem('tsmak_user');
-    localStorage.removeItem('tsmak_token');
+  const handleClearHistory = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setClearHistoryLoading(true);
+    setClearHistoryError('');
     
-    if (isAuto) {
-      alert("You have been logged out due to inactivity.");
+    const token = (window as any)._sessionToken;
+    try {
+      const res = await fetch('/api/chats/clear', {
+        method: 'POST',
+        headers: { 
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({ password: clearHistoryPassword }),
+      });
+      
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Failed to clear history');
+      
+      setHistory([]);
+      setShowClearHistoryModal(false);
+      setClearHistoryPassword('');
+      setIsMenuOpen(false);
+    } catch (err: any) {
+      setClearHistoryError(err.message);
+    } finally {
+      setClearHistoryLoading(false);
     }
   };
 
@@ -266,6 +318,7 @@ export default function App() {
       { role: 'user', content: item.message },
       { role: 'assistant', content: item.response }
     ]);
+    setIsMenuOpen(false);
   };
 
   if (!isLoggedIn) {
@@ -382,72 +435,132 @@ export default function App() {
     );
   }
 
-  return (
-    <div className="flex h-screen bg-islamic-cream">
-      {/* Sidebar */}
-      <aside className="hidden md:flex w-72 flex-col bg-islamic-green text-white shadow-2xl z-20">
-        <div className="p-6 border-b border-white/10">
-          <div className="flex items-center gap-3 mb-8">
+  const SidebarContent = () => (
+    <>
+      <div className="p-6 border-b border-white/10">
+        <div className="flex items-center justify-between mb-8">
+          <div className="flex items-center gap-3">
             <div className="p-2 bg-white/10 rounded-lg">
               <img src={CRESCENT_LOGO} alt="crescent" className="w-5 h-5 object-contain" referrerPolicy="no-referrer" />
             </div>
             <span className="font-sans font-bold text-lg">Tsmak-Islamic GPT</span>
           </div>
-          
           <button 
-            onClick={() => setMessages([])}
-            className="w-full flex items-center gap-3 px-4 py-2.5 bg-white/10 rounded-xl hover:bg-white/20 transition-all text-xs font-semibold uppercase tracking-wider"
+            onClick={() => setIsMenuOpen(false)}
+            className="md:hidden p-2 hover:bg-white/10 rounded-lg transition-colors"
           >
-            <MessageSquare className="w-4 h-4" />
-            New Consultation
+            <X className="w-5 h-5" />
           </button>
         </div>
+        
+        <button 
+          onClick={() => {
+            setMessages([]);
+            setIsMenuOpen(false);
+          }}
+          className="w-full flex items-center gap-3 px-4 py-2.5 bg-white/10 rounded-xl hover:bg-white/20 transition-all text-xs font-semibold uppercase tracking-wider"
+        >
+          <MessageSquare className="w-4 h-4" />
+          New Consultation
+        </button>
+      </div>
 
-        <div className="flex-1 overflow-y-auto p-4 space-y-2">
-          <div className="text-[10px] font-bold text-white/40 uppercase tracking-[0.2em] px-4 mb-4">Consultation History</div>
-          {history.length > 0 ? (
-            history.map((item) => (
-              <button
-                key={item.id}
-                onClick={() => loadFromHistory(item)}
-                className="w-full text-left px-4 py-3 rounded-xl hover:bg-white/5 transition-all group"
-              >
-                <p className="text-xs font-medium text-white/80 truncate group-hover:text-white">{item.message}</p>
-                <p className="text-[10px] text-white/30 mt-1">{new Date(item.timestamp).toLocaleDateString()}</p>
-              </button>
-            ))
-          ) : (
-            <div className="px-4 py-2 text-xs text-white/40 italic">No history yet</div>
+      <div className="flex-1 overflow-y-auto p-4 space-y-2">
+        <div className="flex items-center justify-between px-4 mb-4">
+          <div className="text-[10px] font-bold text-white/40 uppercase tracking-[0.2em]">Consultation History</div>
+          {history.length > 0 && (
+            <button 
+              onClick={() => setShowClearHistoryModal(true)}
+              className="p-1.5 text-white/40 hover:text-red-400 hover:bg-white/5 rounded-lg transition-all"
+              title="Clear History"
+            >
+              <Trash2 className="w-3.5 h-3.5" />
+            </button>
           )}
         </div>
+        {history.length > 0 ? (
+          history.map((item) => (
+            <button
+              key={item.id}
+              onClick={() => loadFromHistory(item)}
+              className="w-full text-left px-4 py-3 rounded-xl hover:bg-white/5 transition-all group"
+            >
+              <p className="text-xs font-medium text-white/80 truncate group-hover:text-white">{item.message}</p>
+              <p className="text-[10px] text-white/30 mt-1">{new Date(item.timestamp).toLocaleDateString()}</p>
+            </button>
+          ))
+        ) : (
+          <div className="px-4 py-2 text-xs text-white/40 italic">No history yet</div>
+        )}
+      </div>
 
-        <div className="p-4 border-t border-white/10">
-          <div className="flex items-center gap-3 px-4 py-3 rounded-xl bg-white/5 mb-4">
-            <div className="w-8 h-8 rounded-full bg-islamic-gold flex items-center justify-center text-islamic-green font-bold text-xs">
-              {user?.name ? user.name[0] : '?'}
-            </div>
-            <div className="flex-1 min-w-0">
-              <p className="text-xs font-bold truncate">{user?.name}</p>
-              <p className="text-[10px] text-white/40 truncate">{user?.email}</p>
-            </div>
+      <div className="p-4 border-t border-white/10">
+        <div className="flex items-center gap-3 px-4 py-3 rounded-xl bg-white/5 mb-4">
+          <div className="w-8 h-8 rounded-full bg-islamic-gold flex items-center justify-center text-islamic-green font-bold text-xs">
+            {user?.name ? user.name[0] : '?'}
           </div>
-          <button 
-            onClick={() => handleLogout()}
-            className="w-full flex items-center gap-3 px-4 py-2 text-white/60 hover:text-white hover:bg-white/5 rounded-xl transition-all text-xs font-medium"
-          >
-            <LogOut className="w-4 h-4" />
-            Sign Out
-          </button>
+          <div className="flex-1 min-w-0">
+            <p className="text-xs font-bold truncate">{user?.name}</p>
+            <p className="text-[10px] text-white/40 truncate">{user?.email}</p>
+          </div>
         </div>
+        <button 
+          onClick={() => handleLogout()}
+          className="w-full flex items-center gap-3 px-4 py-2 text-white/60 hover:text-white hover:bg-white/5 rounded-xl transition-all text-xs font-medium"
+        >
+          <LogOut className="w-4 h-4" />
+          Sign Out
+        </button>
+      </div>
+    </>
+  );
+
+  return (
+    <div className="flex h-screen bg-islamic-cream">
+      {/* Mobile Sidebar Overlay */}
+      <AnimatePresence>
+        {isMenuOpen && (
+          <>
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setIsMenuOpen(false)}
+              className="fixed inset-0 bg-black/60 backdrop-blur-sm z-40 md:hidden"
+            />
+            <motion.aside
+              initial={{ x: '-100%' }}
+              animate={{ x: 0 }}
+              exit={{ x: '-100%' }}
+              transition={{ type: 'spring', damping: 25, stiffness: 200 }}
+              className="fixed inset-y-0 left-0 w-72 bg-islamic-green text-white shadow-2xl z-50 md:hidden flex flex-col"
+            >
+              <SidebarContent />
+            </motion.aside>
+          </>
+        )}
+      </AnimatePresence>
+
+      {/* Desktop Sidebar */}
+      <aside className="hidden md:flex w-72 flex-col bg-islamic-green text-white shadow-2xl z-20">
+        <SidebarContent />
       </aside>
 
       {/* Main Content */}
       <main className="flex-1 flex flex-col relative islamic-pattern overflow-hidden">
         {/* Header */}
         <header className="h-14 glass-panel flex items-center justify-between px-6 z-10">
-          <div className="flex items-center gap-2 md:hidden">
-            <img src={CRESCENT_LOGO} alt="crescent" className="w-5 h-5 object-contain" referrerPolicy="no-referrer" />
-            <span className="font-sans font-bold text-base text-islamic-green">Tsmak GPT</span>
+          <div className="flex items-center gap-3 md:hidden">
+            <button 
+              onClick={() => setIsMenuOpen(true)}
+              className="p-2 -ml-2 hover:bg-islamic-green/5 rounded-lg transition-colors"
+            >
+              <Menu className="w-5 h-5 text-islamic-green" />
+            </button>
+            <div className="flex items-center gap-2">
+              <img src={CRESCENT_LOGO} alt="crescent" className="w-5 h-5 object-contain" referrerPolicy="no-referrer" />
+              <span className="font-sans font-bold text-base text-islamic-green">Tsmak GPT</span>
+            </div>
           </div>
           <div className="flex items-center gap-4 ml-auto">
             <div className="flex items-center gap-2 px-3 py-1 bg-islamic-green/5 rounded-full text-[10px] font-bold text-islamic-green uppercase tracking-wider">
@@ -571,6 +684,82 @@ export default function App() {
           </p>
         </div>
       </main>
+      {/* Clear History Modal */}
+      <AnimatePresence>
+        {showClearHistoryModal && (
+          <div className="fixed inset-0 flex items-center justify-center z-[60] p-4">
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setShowClearHistoryModal(false)}
+              className="fixed inset-0 bg-black/80 backdrop-blur-md"
+            />
+            <motion.div
+              initial={{ scale: 0.9, opacity: 0, y: 20 }}
+              animate={{ scale: 1, opacity: 1, y: 0 }}
+              exit={{ scale: 0.9, opacity: 0, y: 20 }}
+              className="relative w-full max-w-md bg-islamic-green border border-white/10 rounded-3xl p-8 shadow-2xl"
+            >
+              <div className="flex items-center gap-4 mb-6">
+                <div className="w-12 h-12 rounded-2xl bg-red-500/20 flex items-center justify-center text-red-400">
+                  <Trash2 className="w-6 h-6" />
+                </div>
+                <div>
+                  <h3 className="text-xl font-bold text-white">Clear History</h3>
+                  <p className="text-white/60 text-sm">This action cannot be undone.</p>
+                </div>
+              </div>
+
+              <form onSubmit={handleClearHistory} className="space-y-4">
+                <div className="space-y-2">
+                  <label className="text-[10px] font-bold text-white/40 uppercase tracking-widest ml-1">Confirm Password</label>
+                  <div className="relative group">
+                    <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                      <Lock className="w-4 h-4 text-white/30 group-focus-within:text-islamic-gold transition-colors" />
+                    </div>
+                    <input
+                      type="password"
+                      required
+                      value={clearHistoryPassword}
+                      onChange={(e) => setClearHistoryPassword(e.target.value)}
+                      className="w-full bg-white/5 border border-white/10 rounded-2xl py-3.5 pl-11 pr-4 text-white placeholder:text-white/20 focus:outline-none focus:ring-2 focus:ring-islamic-gold/50 focus:border-islamic-gold transition-all text-sm"
+                      placeholder="Enter your password"
+                    />
+                  </div>
+                </div>
+
+                {clearHistoryError && (
+                  <div className="p-3 rounded-xl bg-red-500/10 border border-red-500/20 text-red-400 text-xs text-center">
+                    {clearHistoryError}
+                  </div>
+                )}
+
+                <div className="flex gap-3 pt-2">
+                  <button
+                    type="button"
+                    onClick={() => setShowClearHistoryModal(false)}
+                    className="flex-1 py-3.5 px-4 rounded-2xl bg-white/5 text-white/60 hover:text-white hover:bg-white/10 transition-all text-sm font-bold"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={clearHistoryLoading}
+                    className="flex-1 py-3.5 px-4 rounded-2xl bg-red-500 text-white hover:bg-red-600 transition-all text-sm font-bold shadow-lg shadow-red-500/20 flex items-center justify-center gap-2 disabled:opacity-50"
+                  >
+                    {clearHistoryLoading ? (
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                    ) : (
+                      'Clear All'
+                    )}
+                  </button>
+                </div>
+              </form>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }
