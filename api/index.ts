@@ -2,9 +2,23 @@ import express from "express";
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 import { createClient } from "@supabase/supabase-js";
+import { GoogleGenAI } from "@google/genai";
 
 const app = express();
 app.use(express.json());
+
+// Initialize Gemini lazily
+let aiInstance: GoogleGenAI | null = null;
+const getAI = () => {
+  if (!aiInstance) {
+    const apiKey = process.env.GEMINI_API_KEY;
+    if (!apiKey) {
+      throw new Error("GEMINI_API_KEY is missing in Vercel environment variables.");
+    }
+    aiInstance = new GoogleGenAI({ apiKey });
+  }
+  return aiInstance;
+};
 
 // Initialize Supabase lazily
 const getSupabase = () => {
@@ -159,6 +173,47 @@ app.post("/api/chats", async (req, res) => {
     res.json({ success: true });
   } catch (error: any) {
     res.status(401).json({ error: error.message || "Invalid token" });
+  }
+});
+
+app.post("/api/generate", async (req, res) => {
+  const { prompt } = req.body;
+  console.log(`[API] Received generation request for prompt: ${prompt?.substring(0, 50)}...`);
+  
+  if (!prompt) return res.status(400).json({ error: "Prompt is required" });
+
+  const systemInstruction = `You are "Tsmak Islamic GPT", a highly knowledgeable and respectful Islamic AI assistant. 
+Your goal is to provide accurate answers to Islamic questions based strictly on the Quran and authentic Hadith (Sahih Bukhari, Sahih Muslim, etc.).
+
+For every answer:
+1. Provide a clear explanation in English.
+2. Include relevant Quranic verses as evidence.
+3. Include relevant Hadiths as evidence.
+4. For every piece of evidence (Quran or Hadith), you MUST provide:
+   - The original Arabic text.
+   - The English translation.
+   - The specific reference (e.g., Surah Al-Baqarah 2:255 or Sahih Bukhari 1).
+5. Maintain a scholarly, humble, and objective tone.
+6. If a matter has different scholarly opinions, briefly mention them with respect.
+7. Use Markdown for formatting. Use blockquotes for Arabic texts.
+
+Structure your response clearly with headings.`;
+
+  try {
+    const ai = getAI();
+    const response = await ai.models.generateContent({
+      model: "gemini-3.1-pro-preview",
+      contents: prompt,
+      config: {
+        systemInstruction,
+        temperature: 0.7,
+      },
+    });
+
+    res.json({ text: response.text });
+  } catch (error: any) {
+    console.error("Gemini Error:", error);
+    res.status(500).json({ error: error.message || "Failed to generate response from Gemini" });
   }
 });
 

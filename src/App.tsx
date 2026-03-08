@@ -53,11 +53,7 @@ export default function App() {
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    const key = process.env.GEMINI_API_KEY || ((import.meta as any).env && (import.meta as any).env.VITE_GEMINI_API_KEY);
-    if (!key) {
-      setApiKeyMissing(true);
-      console.warn("GEMINI_API_KEY is missing. Ensure it is set in Vercel Environment Variables and redeployed.");
-    }
+    // API key check moved to backend for security
   }, []);
 
   useEffect(() => {
@@ -311,7 +307,7 @@ export default function App() {
             <div className="p-2 bg-white/10 rounded-lg">
               <Moon className="w-5 h-5 text-islamic-gold" />
             </div>
-            <span className="font-sans font-bold text-lg">Tsmak-Islamic GPT</span>
+            <span className="font-sans font-bold text-lg">Tsmak-Islamic GPT <span className="text-[10px] opacity-30">v2.1</span></span>
           </div>
           
           <button 
@@ -367,13 +363,8 @@ export default function App() {
         <header className="h-14 glass-panel flex items-center justify-between px-6 z-10">
           <div className="flex items-center gap-2 md:hidden">
             <Moon className="w-5 h-5 text-islamic-green" />
-            <span className="font-sans font-bold text-base text-islamic-green">Tsmak-Islamic GPT</span>
+            <span className="font-sans font-bold text-base text-islamic-green">Tsmak-Islamic GPT <span className="text-[8px] opacity-50">v2.1</span></span>
           </div>
-          {apiKeyMissing && (
-            <div className="bg-red-500/10 border border-red-500/20 px-3 py-1 rounded-full text-[10px] font-bold text-red-600 uppercase tracking-wider animate-pulse">
-              GEMINI_API_KEY Missing - Set in Vercel & Redeploy
-            </div>
-          )}
           <div className="flex items-center gap-4 ml-auto">
             <div className="flex items-center gap-2 px-3 py-1 bg-islamic-green/5 rounded-full text-[10px] font-bold text-islamic-green uppercase tracking-wider">
               <ShieldCheck className="w-3 h-3" />
