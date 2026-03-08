@@ -260,7 +260,15 @@ export default function App() {
         body: JSON.stringify({ password: clearHistoryPassword }),
       });
       
-      const data = await res.json();
+      let data;
+      const contentType = res.headers.get("content-type");
+      if (contentType && contentType.indexOf("application/json") !== -1) {
+        data = await res.json();
+      } else {
+        const text = await res.text();
+        throw new Error(`Server returned non-JSON response: ${text.substring(0, 50)}...`);
+      }
+      
       if (!res.ok) throw new Error(data.error || 'Failed to clear history');
       
       setHistory([]);
