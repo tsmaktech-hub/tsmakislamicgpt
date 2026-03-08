@@ -4,7 +4,7 @@ import {
   Send, 
   LogOut, 
   User, 
-  Moon, 
+  Moon,
   Sun, 
   MessageSquare, 
   BookOpen, 
@@ -15,6 +15,9 @@ import {
 } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 import { generateIslamicResponse } from './services/geminiService';
+
+// Constants
+const CRESCENT_LOGO = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%23D4AF37' stroke='%23D4AF37' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z'/%3E%3C/svg%3E";
 
 // Types
 interface Message {
@@ -274,10 +277,10 @@ export default function App() {
           className="w-full max-w-sm glass-panel p-6 rounded-3xl shadow-2xl"
         >
           <div className="text-center mb-6">
-            <div className="inline-flex items-center justify-center w-14 h-14 rounded-2xl bg-islamic-green/80 text-white mb-3 shadow-lg backdrop-blur-md">
-              <Moon className="w-7 h-7 text-islamic-gold" />
+            <div className="inline-flex items-center justify-center w-14 h-14 rounded-2xl bg-islamic-green/80 text-white mb-3 shadow-lg backdrop-blur-md overflow-hidden">
+              <img src={CRESCENT_LOGO} alt="crescent" className="w-8 h-8 object-contain" referrerPolicy="no-referrer" />
             </div>
-            <h1 className="text-xl font-sans font-bold text-white">Tsmak Tech</h1>
+            <h1 className="text-xl font-sans font-bold text-white">Tsmak-Islamic GPT</h1>
             <p className="text-white/80 mt-1 text-xs">Your companion for Islamic knowledge</p>
           </div>
 
@@ -386,9 +389,9 @@ export default function App() {
         <div className="p-6 border-b border-white/10">
           <div className="flex items-center gap-3 mb-8">
             <div className="p-2 bg-white/10 rounded-lg">
-              <Moon className="w-5 h-5 text-islamic-gold" />
+              <img src={CRESCENT_LOGO} alt="crescent" className="w-5 h-5 object-contain" referrerPolicy="no-referrer" />
             </div>
-            <span className="font-sans font-bold text-lg">Tsmak Tech</span>
+            <span className="font-sans font-bold text-lg">Tsmak-Islamic GPT</span>
           </div>
           
           <button 
@@ -443,8 +446,8 @@ export default function App() {
         {/* Header */}
         <header className="h-14 glass-panel flex items-center justify-between px-6 z-10">
           <div className="flex items-center gap-2 md:hidden">
-            <Moon className="w-5 h-5 text-islamic-green" />
-            <span className="font-sans font-bold text-base text-islamic-green">Tsmak Tech</span>
+            <img src={CRESCENT_LOGO} alt="crescent" className="w-5 h-5 object-contain" referrerPolicy="no-referrer" />
+            <span className="font-sans font-bold text-base text-islamic-green">Tsmak GPT</span>
           </div>
           <div className="flex items-center gap-4 ml-auto">
             <div className="flex items-center gap-2 px-3 py-1 bg-islamic-green/5 rounded-full text-[10px] font-bold text-islamic-green uppercase tracking-wider">
