@@ -1,14 +1,8 @@
 import express from "express";
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
-import path from "path";
-import fs from "fs";
-import { fileURLToPath } from "url";
 import { OAuth2Client } from "google-auth-library";
 import { createClient } from "@supabase/supabase-js";
-
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
 
 const SUPABASE_URL = process.env.SUPABASE_URL || "";
 const SUPABASE_ANON_KEY = process.env.SUPABASE_ANON_KEY || "";
@@ -30,24 +24,14 @@ const app = express();
 app.use(express.json());
 
 // API routes
-app.get("/api/health", async (req, res) => {
-  const status: any = {
+app.get("/api/health", (req, res) => {
+  res.json({
     status: "ok",
     supabase: supabase ? "initialized" : "missing",
     env: process.env.NODE_ENV,
-    vercel: !!process.env.VERCEL
-  };
-  
-  if (supabase) {
-    try {
-      const { error } = await supabase.from("islamic_gpt_users").select("count", { count: 'exact', head: true });
-      status.database = error ? `error: ${error.message}` : "connected";
-    } catch (e: any) {
-      status.database = `exception: ${e.message}`;
-    }
-  }
-  
-  res.json(status);
+    vercel: !!process.env.VERCEL,
+    timestamp: new Date().toISOString()
+  });
 });
 
 app.get("/api/auth/google/url", (req, res) => {
@@ -150,33 +134,5 @@ app.post("/api/chats", async (req, res) => {
     res.status(401).json({ error: "Invalid token" });
   }
 });
-
-// Vite middleware for development
-if (process.env.NODE_ENV !== "production" && !process.env.VERCEL) {
-  import("vite").then(async ({ createServer: createViteServer }) => {
-    const vite = await createViteServer({
-      server: { middlewareMode: true },
-      appType: "spa",
-    });
-    app.use(vite.middlewares);
-  });
-} else {
-  const distPath = path.join(__dirname, "dist");
-  if (fs.existsSync(distPath)) {
-    app.use(express.static(distPath));
-    app.get("*", (req, res) => {
-      const indexPath = path.join(distPath, "index.html");
-      if (fs.existsSync(indexPath)) res.sendFile(indexPath);
-    });
-  }
-}
-
-// For local development
-if (process.env.NODE_ENV !== "production" && !process.env.VERCEL) {
-  const PORT = 3000;
-  app.listen(PORT, "0.0.0.0", () => {
-    console.log(`Server running on http://localhost:${PORT}`);
-  });
-}
 
 export default app;
