@@ -54,7 +54,10 @@ export default function App() {
 
   useEffect(() => {
     const key = process.env.GEMINI_API_KEY || ((import.meta as any).env && (import.meta as any).env.VITE_GEMINI_API_KEY);
-    if (!key) setApiKeyMissing(true);
+    if (!key) {
+      setApiKeyMissing(true);
+      console.warn("GEMINI_API_KEY is missing. Ensure it is set in Vercel Environment Variables and redeployed.");
+    }
   }, []);
 
   useEffect(() => {
@@ -171,8 +174,8 @@ export default function App() {
         body: JSON.stringify({ message: userMessage, response }),
       });
       fetchHistory(token!);
-    } catch (err) {
-      setMessages(prev => [...prev, { role: 'assistant', content: 'Peace be upon you. I encountered an error while processing your request. Please try again.' }]);
+    } catch (err: any) {
+      setMessages(prev => [...prev, { role: 'assistant', content: `Peace be upon you. I encountered an error: ${err.message}. Please try again.` }]);
     } finally {
       setIsTyping(false);
     }
@@ -368,7 +371,7 @@ export default function App() {
           </div>
           {apiKeyMissing && (
             <div className="bg-red-500/10 border border-red-500/20 px-3 py-1 rounded-full text-[10px] font-bold text-red-600 uppercase tracking-wider animate-pulse">
-              API Key Missing
+              GEMINI_API_KEY Missing - Set in Vercel & Redeploy
             </div>
           )}
           <div className="flex items-center gap-4 ml-auto">
