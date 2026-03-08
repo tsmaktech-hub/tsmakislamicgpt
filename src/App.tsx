@@ -212,7 +212,7 @@ export default function App() {
             <div className="inline-flex items-center justify-center w-14 h-14 rounded-2xl bg-islamic-green/80 text-white mb-3 shadow-lg backdrop-blur-md">
               <Moon className="w-7 h-7 text-islamic-gold" />
             </div>
-            <h1 className="text-xl font-sans font-bold text-white">Tsmak-Islamic GPT</h1>
+            <h1 className="text-xl font-sans font-bold text-white">Tsmmak-Islamic GPT</h1>
             <p className="text-white/80 mt-1 text-xs">Your companion for Islamic knowledge</p>
           </div>
 
@@ -323,7 +323,7 @@ export default function App() {
             <div className="p-2 bg-white/10 rounded-lg">
               <Moon className="w-5 h-5 text-islamic-gold" />
             </div>
-            <span className="font-sans font-bold text-lg">Tsmak-Islamic GPT</span>
+            <span className="font-sans font-bold text-lg">Tsmmak-Islamic GPT</span>
           </div>
           
           <button 
@@ -379,7 +379,7 @@ export default function App() {
         <header className="h-14 glass-panel flex items-center justify-between px-6 z-10">
           <div className="flex items-center gap-2 md:hidden">
             <Moon className="w-5 h-5 text-islamic-green" />
-            <span className="font-sans font-bold text-base text-islamic-green">Tsmak-Islamic GPT</span>
+            <span className="font-sans font-bold text-base text-islamic-green">Tsmmak-Islamic GPT</span>
           </div>
           {apiKeyMissing && (
             <div className="bg-red-500/10 border border-red-500/20 px-3 py-1 rounded-full text-[10px] font-bold text-red-600 uppercase tracking-wider animate-pulse">
@@ -410,7 +410,7 @@ export default function App() {
                   Assalamu Alaikum Warahmatullahi Wabarakatuh, {user?.name}
                 </h2>
                 <p className="text-slate-600 text-sm leading-relaxed">
-                  I am Tsmak-Islamic GPT. Ask me anything about Fiqh, Aqidah, or Seerah. 
+                  I am Tsmmak-Islamic GPT. Ask me anything about Fiqh, Aqidah, or Seerah. 
                   I provide evidence from the Quran and authentic Hadith.
                 </p>
               </div>
@@ -504,7 +504,7 @@ export default function App() {
             </button>
           </form>
           <p className="text-center text-[9px] text-slate-400 mt-4 uppercase tracking-[0.3em] font-bold">
-            Tsmak-Islamic GPT • Knowledge is Light
+            Tsmmak-Islamic GPT • Knowledge is Light
           </p>
         </div>
       </main>
