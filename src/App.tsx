@@ -121,10 +121,10 @@ export default function App() {
         data = await res.json();
       } else {
         const text = await res.text();
-        throw new Error(text || 'A server error occurred. Please check your configuration.');
+        throw new Error(`Server Error (${res.status}): ${text || 'Check Vercel logs for details.'}`);
       }
       
-      if (!res.ok) throw new Error(data.error || 'Authentication failed');
+      if (!res.ok) throw new Error(data.error || data.message || `Authentication failed (${res.status})`);
       
       // Store token in memory only (state) to ensure logout on refresh
       setUser(data.user);
