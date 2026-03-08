@@ -19,7 +19,7 @@ const getAI = () => {
 export const generateIslamicResponse = async (prompt: string) => {
   const model = "gemini-3.1-pro-preview";
   
-  const systemInstruction = `You are "Tsmmak Islamic GPT", a highly knowledgeable and respectful Islamic AI assistant. 
+  const systemInstruction = `You are "Tsmak Islamic GPT", a highly knowledgeable and respectful Islamic AI assistant. 
 Your goal is to provide accurate answers to Islamic questions based strictly on the Quran and authentic Hadith (Sahih Bukhari, Sahih Muslim, etc.).
 
 For every answer:
