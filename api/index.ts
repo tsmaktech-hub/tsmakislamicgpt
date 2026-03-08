@@ -1,10 +1,21 @@
 import express from "express";
-import bcrypt from "bcryptjs";
-import jwt from "jsonwebtoken";
+import cors from "cors";
+import * as bcrypt from "bcryptjs";
+import * as jwt from "jsonwebtoken";
 import { createClient } from "@supabase/supabase-js";
 import { GoogleGenAI } from "@google/genai";
 
+// Process-level error handling for better diagnostics in Vercel logs
+process.on('uncaughtException', (err) => {
+  console.error('CRITICAL: Uncaught Exception:', err);
+});
+
+process.on('unhandledRejection', (reason, promise) => {
+  console.error('CRITICAL: Unhandled Rejection at:', promise, 'reason:', reason);
+});
+
 const app = express();
+app.use(cors());
 app.use(express.json());
 
 // Initialize Gemini lazily
@@ -77,9 +88,13 @@ app.post("/api/auth/signup", async (req, res) => {
 
   try {
     const supabase = getSupabase();
-    console.log(`Attempting signup for: ${email}`);
+    console.log(`[AUTH] Attempting signup for: ${email}`);
     
-    const hashedPassword = await bcrypt.hash(password, 10);
+    // Use a safer way to access bcrypt methods in ESM
+    const bcryptHash = (bcrypt as any).hash || (bcrypt as any).default?.hash;
+    if (!bcryptHash) throw new Error("Bcrypt hash function not found");
+    
+    const hashedPassword = await bcryptHash(password, 10);
     
     const { data: user, error } = await supabase
       .from("islamic_gpt_users")
@@ -110,7 +125,7 @@ app.post("/api/auth/login", async (req, res) => {
 
   try {
     const supabase = getSupabase();
-    console.log(`Attempting login for: ${email}`);
+    console.log(`[AUTH] Attempting login for: ${email}`);
     
     const { data: user, error } = await supabase
       .from("islamic_gpt_users")
@@ -119,17 +134,24 @@ app.post("/api/auth/login", async (req, res) => {
       .single();
     
     if (error || !user) {
-      console.warn("Login failed: User not found", error);
+      console.warn(`[AUTH] Login failed: User not found for ${email}`, error);
       return res.status(401).json({ error: "Invalid credentials" });
     }
     
-    const isValid = await bcrypt.compare(password, user.password);
+    // Use a safer way to access bcrypt methods in ESM
+    const bcryptCompare = (bcrypt as any).compare || (bcrypt as any).default?.compare;
+    if (!bcryptCompare) throw new Error("Bcrypt compare function not found");
+    
+    const isValid = await bcryptCompare(password, user.password);
     if (!isValid) {
-      console.warn("Login failed: Password mismatch");
+      console.warn(`[AUTH] Login failed: Password mismatch for ${email}`);
       return res.status(401).json({ error: "Invalid credentials" });
     }
     
-    const token = jwt.sign({ userId: user.id, email: user.email, name: user.name }, JWT_SECRET);
+    const jwtSign = (jwt as any).sign || (jwt as any).default?.sign;
+    if (!jwtSign) throw new Error("JWT sign function not found");
+    
+    const token = jwtSign({ userId: user.id, email: user.email, name: user.name }, JWT_SECRET);
     res.json({ token, user: { id: user.id, email: user.email, name: user.name } });
   } catch (error: any) {
     console.error("Login internal error:", error);
@@ -144,7 +166,11 @@ app.get("/api/chats", async (req, res) => {
   try {
     const supabase = getSupabase();
     const token = authHeader.split(" ")[1];
-    const decoded = jwt.verify(token, JWT_SECRET) as any;
+    
+    const jwtVerify = (jwt as any).verify || (jwt as any).default?.verify;
+    if (!jwtVerify) throw new Error("JWT verify function not found");
+    
+    const decoded = jwtVerify(token, JWT_SECRET) as any;
     
     const { data: chats, error } = await supabase
       .from("islamic_gpt_chats")
@@ -167,7 +193,11 @@ app.post("/api/chats", async (req, res) => {
   try {
     const supabase = getSupabase();
     const token = authHeader.split(" ")[1];
-    const decoded = jwt.verify(token, JWT_SECRET) as any;
+    
+    const jwtVerify = (jwt as any).verify || (jwt as any).default?.verify;
+    if (!jwtVerify) throw new Error("JWT verify function not found");
+    
+    const decoded = jwtVerify(token, JWT_SECRET) as any;
     const { message, response } = req.body;
     
     const { error } = await supabase
