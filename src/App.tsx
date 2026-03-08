@@ -277,7 +277,7 @@ export default function App() {
             <div className="inline-flex items-center justify-center w-14 h-14 rounded-2xl bg-islamic-green/80 text-white mb-3 shadow-lg backdrop-blur-md">
               <Moon className="w-7 h-7 text-islamic-gold" />
             </div>
-            <h1 className="text-xl font-sans font-bold text-white">Tsmak-Islamic GPT</h1>
+            <h1 className="text-xl font-sans font-bold text-white">Tsmak Tech</h1>
             <p className="text-white/80 mt-1 text-xs">Your companion for Islamic knowledge</p>
           </div>
 
@@ -388,7 +388,7 @@ export default function App() {
             <div className="p-2 bg-white/10 rounded-lg">
               <Moon className="w-5 h-5 text-islamic-gold" />
             </div>
-            <span className="font-sans font-bold text-lg">Tsmak-Islamic GPT</span>
+            <span className="font-sans font-bold text-lg">Tsmak Tech</span>
           </div>
           
           <button 
@@ -444,7 +444,7 @@ export default function App() {
         <header className="h-14 glass-panel flex items-center justify-between px-6 z-10">
           <div className="flex items-center gap-2 md:hidden">
             <Moon className="w-5 h-5 text-islamic-green" />
-            <span className="font-sans font-bold text-base text-islamic-green">Tsmak GPT</span>
+            <span className="font-sans font-bold text-base text-islamic-green">Tsmak Tech</span>
           </div>
           <div className="flex items-center gap-4 ml-auto">
             <div className="flex items-center gap-2 px-3 py-1 bg-islamic-green/5 rounded-full text-[10px] font-bold text-islamic-green uppercase tracking-wider">
