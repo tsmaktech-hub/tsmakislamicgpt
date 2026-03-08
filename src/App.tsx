@@ -49,16 +49,67 @@ export default function App() {
   const [history, setHistory] = useState<ChatHistory[]>([]);
   const [input, setInput] = useState('');
   const [isTyping, setIsTyping] = useState(false);
-  const [apiKeyMissing, setApiKeyMissing] = useState(false);
+  const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const inactivityTimerRef = useRef<NodeJS.Timeout | null>(null);
 
+  // Session Persistence: Check localStorage on mount
   useEffect(() => {
-    // API key check moved to backend for security
+    const savedUser = localStorage.getItem('tsmak_user');
+    const savedToken = localStorage.getItem('tsmak_token');
+    
+    if (savedUser && savedToken) {
+      try {
+        const userData = JSON.parse(savedUser);
+        setUser(userData);
+        setIsLoggedIn(true);
+        (window as any)._sessionToken = savedToken;
+        fetchHistory(savedToken);
+      } catch (e) {
+        console.error("Failed to restore session", e);
+        localStorage.removeItem('tsmak_user');
+        localStorage.removeItem('tsmak_token');
+      }
+    }
   }, []);
 
+  // Inactivity Logout: 5 minutes
+  const resetInactivityTimer = () => {
+    if (inactivityTimerRef.current) {
+      clearTimeout(inactivityTimerRef.current);
+    }
+    
+    if (isLoggedIn) {
+      inactivityTimerRef.current = setTimeout(() => {
+        handleLogout(true); // Auto-logout due to inactivity
+      }, 5 * 60 * 1000); // 5 minutes
+    }
+  };
+
   useEffect(() => {
-    // Session persistence removed as per user request
-  }, []);
+    if (isLoggedIn) {
+      const events = ['mousedown', 'mousemove', 'keypress', 'scroll', 'touchstart'];
+      
+      const handleUserActivity = () => {
+        resetInactivityTimer();
+      };
+
+      events.forEach(event => {
+        window.addEventListener(event, handleUserActivity);
+      });
+
+      resetInactivityTimer();
+
+      return () => {
+        events.forEach(event => {
+          window.removeEventListener(event, handleUserActivity);
+        });
+        if (inactivityTimerRef.current) {
+          clearTimeout(inactivityTimerRef.current);
+        }
+      };
+    }
+  }, [isLoggedIn]);
 
   const fetchHistory = async (token: string) => {
     try {
@@ -132,10 +183,14 @@ export default function App() {
     
     if (!res.ok) throw new Error(data.error || data.message || `Authentication failed (${res.status})`);
       
-      // Store token in memory only (state) to ensure logout on refresh
+      // Store token and user in state and localStorage
       setUser(data.user);
       setIsLoggedIn(true);
       fetchHistory(data.token);
+      
+      localStorage.setItem('tsmak_user', JSON.stringify(data.user));
+      localStorage.setItem('tsmak_token', data.token);
+      
       // We still need the token for subsequent API calls in this session
       (window as any)._sessionToken = data.token; 
     } catch (err: any) {
@@ -145,12 +200,23 @@ export default function App() {
     }
   };
 
-  const handleLogout = () => {
+  const handleLogout = (isAuto = false) => {
+    if (!isAuto) {
+      const confirmed = window.confirm("Are you sure you want to logout?");
+      if (!confirmed) return;
+    }
+
     setIsLoggedIn(false);
     setUser(null);
     setMessages([]);
     setHistory([]);
     (window as any)._sessionToken = null;
+    localStorage.removeItem('tsmak_user');
+    localStorage.removeItem('tsmak_token');
+    
+    if (isAuto) {
+      alert("You have been logged out due to inactivity.");
+    }
   };
 
   const handleSendMessage = async (e: React.FormEvent) => {
@@ -363,7 +429,7 @@ export default function App() {
             </div>
           </div>
           <button 
-            onClick={handleLogout}
+            onClick={() => handleLogout()}
             className="w-full flex items-center gap-3 px-4 py-2 text-white/60 hover:text-white hover:bg-white/5 rounded-xl transition-all text-xs font-medium"
           >
             <LogOut className="w-4 h-4" />
