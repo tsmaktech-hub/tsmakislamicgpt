@@ -202,7 +202,7 @@ Structure your response clearly with headings.`;
   try {
     const ai = getAI();
     const response = await ai.models.generateContent({
-      model: "gemini-3.1-pro-preview",
+      model: "gemini-3-flash-preview",
       contents: prompt,
       config: {
         systemInstruction,
@@ -213,7 +213,12 @@ Structure your response clearly with headings.`;
     res.json({ text: response.text });
   } catch (error: any) {
     console.error("Gemini Error:", error);
-    res.status(500).json({ error: error.message || "Failed to generate response from Gemini" });
+    // Extract a cleaner message if it's a quota error
+    let errorMessage = error.message || "Failed to generate response from Gemini";
+    if (errorMessage.includes("quota") || errorMessage.includes("429")) {
+      errorMessage = "The AI is currently busy (Quota Exceeded). Please wait a minute and try again, or check your Gemini API key limits.";
+    }
+    res.status(500).json({ error: errorMessage });
   }
 });
 

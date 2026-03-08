@@ -171,7 +171,15 @@ export default function App() {
       });
       fetchHistory(token!);
     } catch (err: any) {
-      setMessages(prev => [...prev, { role: 'assistant', content: `Peace be upon you. I encountered an error: ${err.message}. Please try again.` }]);
+      let cleanError = err.message;
+      try {
+        // Try to parse if it's a JSON string from the server
+        const parsed = JSON.parse(err.message);
+        cleanError = parsed.error?.message || parsed.error || err.message;
+      } catch (e) {
+        // Not JSON, keep as is
+      }
+      setMessages(prev => [...prev, { role: 'assistant', content: `Peace be upon you. I encountered an error: ${cleanError}. Please try again.` }]);
     } finally {
       setIsTyping(false);
     }
