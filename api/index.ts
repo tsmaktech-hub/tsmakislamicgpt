@@ -286,22 +286,44 @@ Structure your response clearly with headings.`;
 
   try {
     const ai = getAI();
-    const response = await ai.models.generateContent({
-      model: "gemini-3-flash-preview",
-      contents: prompt,
-      config: {
-        systemInstruction,
-        temperature: 0.7,
-      },
-    });
+    let response;
+    let attempts = 0;
+    const maxAttempts = 3;
+    
+    while (attempts < maxAttempts) {
+      try {
+        response = await ai.models.generateContent({
+          model: "gemini-3-flash-preview",
+          contents: prompt,
+          config: {
+            systemInstruction,
+            temperature: 0.7,
+          },
+        });
+        break; // Success
+      } catch (err: any) {
+        attempts++;
+        const isTransient = err.message?.includes("503") || err.message?.includes("high demand") || err.message?.includes("overloaded");
+        if (isTransient && attempts < maxAttempts) {
+          console.log(`[API] Gemini busy, retrying attempt ${attempts}...`);
+          await new Promise(resolve => setTimeout(resolve, 2000 * attempts)); // Exponential backoff
+          continue;
+        }
+        throw err; // Rethrow if not transient or max attempts reached
+      }
+    }
+
+    if (!response) throw new Error("Failed to get response from Gemini after retries");
 
     res.json({ text: response.text });
   } catch (error: any) {
     console.error("Gemini Error:", error);
-    // Extract a cleaner message if it's a quota error
+    // Extract a cleaner message if it's a quota or demand error
     let errorMessage = error.message || "Failed to generate response from Gemini";
     if (errorMessage.includes("quota") || errorMessage.includes("429")) {
-      errorMessage = "The AI is currently busy (Quota Exceeded). Please wait a minute and try again, or check your Gemini API key limits.";
+      errorMessage = "The AI is currently busy (Quota Exceeded). Please wait a minute and try again.";
+    } else if (errorMessage.includes("503") || errorMessage.includes("high demand")) {
+      errorMessage = "The AI is currently experiencing very high demand. Please try again in a few moments.";
     }
     res.status(500).json({ error: errorMessage });
   }
