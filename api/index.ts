@@ -211,6 +211,56 @@ app.post("/api/chats", async (req, res) => {
   }
 });
 
+app.post("/api/chats/clear", async (req, res) => {
+  const authHeader = req.headers.authorization;
+  if (!authHeader) return res.status(401).json({ error: "Unauthorized" });
+  
+  const { password } = req.body;
+  if (!password) return res.status(400).json({ error: "Password is required" });
+
+  try {
+    const supabase = getSupabase();
+    const token = authHeader.split(" ")[1];
+    
+    const jwtVerify = (jwt as any).verify || (jwt as any).default?.verify;
+    if (!jwtVerify) throw new Error("JWT verify function not found");
+    
+    const decoded = jwtVerify(token, JWT_SECRET) as any;
+    
+    // Verify password
+    const { data: user, error: userError } = await supabase
+      .from("islamic_gpt_users")
+      .select("*")
+      .eq("id", decoded.userId)
+      .single();
+      
+    if (userError || !user) {
+      return res.status(401).json({ error: "User not found" });
+    }
+
+    const bcryptCompare = (bcrypt as any).compare || (bcrypt as any).default?.compare;
+    if (!bcryptCompare) throw new Error("Bcrypt compare function not found");
+    
+    const isValid = await bcryptCompare(password, user.password);
+    if (!isValid) {
+      return res.status(401).json({ error: "Invalid password" });
+    }
+
+    // Delete chats
+    const { error: deleteError } = await supabase
+      .from("islamic_gpt_chats")
+      .delete()
+      .eq("user_id", decoded.userId);
+      
+    if (deleteError) throw deleteError;
+    
+    res.json({ success: true });
+  } catch (error: any) {
+    console.error("Clear history error:", error);
+    res.status(500).json({ error: error.message || "Failed to clear history" });
+  }
+});
+
 app.post("/api/generate", async (req, res) => {
   const { prompt } = req.body;
   console.log(`[API] Received generation request for prompt: ${prompt?.substring(0, 50)}...`);
