@@ -85,6 +85,9 @@ export default function App() {
     if (!isAuto) {
       localStorage.removeItem('tsmak_last_email');
       localStorage.removeItem('tsmak_last_password');
+      setEmail('');
+      setPassword('');
+      setAuthMode('login');
     }
 
     if (isAuto && message) {
