@@ -64,6 +64,7 @@ export default function App() {
   const [clearHistoryError, setClearHistoryError] = useState('');
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inactivityTimerRef = useRef<NodeJS.Timeout | null>(null);
+  const prefillTimerRef = useRef<NodeJS.Timeout | null>(null);
 
   const handleLogout = (isAuto = false, message?: string) => {
     if (!isAuto) {
@@ -80,8 +81,16 @@ export default function App() {
     localStorage.removeItem('tsmak_token');
     sessionStorage.removeItem('tsmak_refresh_count');
     
-    if (isAuto) {
-      alert(message || "You have been logged out due to inactivity.");
+    // Also clear pre-fill on manual logout
+    if (!isAuto) {
+      localStorage.removeItem('tsmak_last_email');
+      localStorage.removeItem('tsmak_last_password');
+    }
+
+    if (isAuto && message) {
+      alert(message);
+    } else if (isAuto) {
+      alert("You have been logged out due to inactivity.");
     }
   };
 
@@ -91,32 +100,29 @@ export default function App() {
     const savedToken = localStorage.getItem('tsmak_token');
     
     if (savedUser && savedToken) {
-      // Refresh counter logic
-      const refreshCount = parseInt(sessionStorage.getItem('tsmak_refresh_count') || '0');
+      // User was logged in, but we want to force login on refresh
+      // as per user request: "when you have logged in and you refresh the page it should take you to the login page"
       
-      if (refreshCount >= 2) {
-        handleLogout(true, "You have been logged out after refreshing the page twice.");
-        sessionStorage.removeItem('tsmak_refresh_count');
-        return;
-      }
+      handleLogout(true); // Clear session but don't alert yet
+      setAuthMode('login');
       
-      sessionStorage.setItem('tsmak_refresh_count', (refreshCount + 1).toString());
-
-      try {
-        const userData = JSON.parse(savedUser);
-        setUser(userData);
-        setIsLoggedIn(true);
-        (window as any)._sessionToken = savedToken;
-        fetchHistory(savedToken);
-      } catch (e) {
-        console.error("Failed to restore session", e);
-        localStorage.removeItem('tsmak_user');
-        localStorage.removeItem('tsmak_token');
-      }
+      const lastEmail = localStorage.getItem('tsmak_last_email');
+      const lastPassword = localStorage.getItem('tsmak_last_password');
+      
+      if (lastEmail) setEmail(lastEmail);
+      if (lastPassword) setPassword(lastPassword);
+      
+      // Start 30s wipe timer
+      prefillTimerRef.current = setTimeout(() => {
+        setEmail('');
+        setPassword('');
+        localStorage.removeItem('tsmak_last_email');
+        localStorage.removeItem('tsmak_last_password');
+      }, 30000);
     }
   }, []);
 
-  // Inactivity Logout: 5 minutes
+  // Inactivity Logout: 1 minute 30 seconds (90 seconds)
   const resetInactivityTimer = () => {
     if (inactivityTimerRef.current) {
       clearTimeout(inactivityTimerRef.current);
@@ -125,7 +131,7 @@ export default function App() {
     if (isLoggedIn) {
       inactivityTimerRef.current = setTimeout(() => {
         handleLogout(true); // Auto-logout due to inactivity
-      }, 5 * 60 * 1000); // 5 minutes
+      }, 90 * 1000); // 1 minute 30 seconds
     }
   };
 
@@ -226,6 +232,12 @@ export default function App() {
     
     if (!res.ok) throw new Error(data.error || data.message || `Authentication failed (${res.status})`);
       
+      // Clear pre-fill timer if it exists
+      if (prefillTimerRef.current) {
+        clearTimeout(prefillTimerRef.current);
+        prefillTimerRef.current = null;
+      }
+
       // Store token and user in state and localStorage
       setUser(data.user);
       setIsLoggedIn(true);
@@ -233,6 +245,11 @@ export default function App() {
       
       localStorage.setItem('tsmak_user', JSON.stringify(data.user));
       localStorage.setItem('tsmak_token', data.token);
+      
+      // Store credentials for refresh pre-fill
+      localStorage.setItem('tsmak_last_email', email);
+      localStorage.setItem('tsmak_last_password', password);
+      
       sessionStorage.setItem('tsmak_refresh_count', '0');
       
       // We still need the token for subsequent API calls in this session
