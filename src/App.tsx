@@ -62,6 +62,10 @@ export default function App() {
   const [clearHistoryPassword, setClearHistoryPassword] = useState('');
   const [clearHistoryLoading, setClearHistoryLoading] = useState(false);
   const [clearHistoryError, setClearHistoryError] = useState('');
+  const [showDeleteAccountModal, setShowDeleteAccountModal] = useState(false);
+  const [deleteAccountPassword, setDeleteAccountPassword] = useState('');
+  const [deleteAccountLoading, setDeleteAccountLoading] = useState(false);
+  const [deleteAccountError, setDeleteAccountError] = useState('');
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inactivityTimerRef = useRef<NodeJS.Timeout | null>(null);
   const prefillTimerRef = useRef<NodeJS.Timeout | null>(null);
@@ -235,6 +239,14 @@ export default function App() {
     
     if (!res.ok) throw new Error(data.error || data.message || `Authentication failed (${res.status})`);
       
+      if (authMode === 'signup') {
+        setAuthMode('login');
+        setError(''); // Clear any previous errors
+        alert("Account created successfully! Please log in with your details.");
+        setLoading(false);
+        return;
+      }
+
       // Clear pre-fill timer if it exists
       if (prefillTimerRef.current) {
         clearTimeout(prefillTimerRef.current);
@@ -299,6 +311,44 @@ export default function App() {
       setClearHistoryError(err.message);
     } finally {
       setClearHistoryLoading(false);
+    }
+  };
+
+  const handleDeleteAccount = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setDeleteAccountLoading(true);
+    setDeleteAccountError('');
+    
+    const token = (window as any)._sessionToken;
+    try {
+      const res = await fetch('/api/auth/delete-account', {
+        method: 'POST',
+        headers: { 
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({ password: deleteAccountPassword }),
+      });
+      
+      let data;
+      const contentType = res.headers.get("content-type");
+      if (contentType && contentType.indexOf("application/json") !== -1) {
+        data = await res.json();
+      } else {
+        const text = await res.text();
+        throw new Error(`Server returned non-JSON response: ${text.substring(0, 50)}...`);
+      }
+      
+      if (!res.ok) throw new Error(data.error || 'Failed to delete account');
+      
+      setShowDeleteAccountModal(false);
+      setDeleteAccountPassword('');
+      setIsMenuOpen(false);
+      handleLogout(true, "Your account has been successfully deleted.");
+    } catch (err: any) {
+      setDeleteAccountError(err.message);
+    } finally {
+      setDeleteAccountLoading(false);
     }
   };
 
@@ -532,6 +582,13 @@ export default function App() {
             <p className="text-[10px] text-white/40 truncate">{user?.email}</p>
           </div>
         </div>
+        <button 
+          onClick={() => setShowDeleteAccountModal(true)}
+          className="w-full flex items-center gap-3 px-4 py-2 text-red-400/60 hover:text-red-400 hover:bg-red-400/5 rounded-xl transition-all text-xs font-medium mb-2"
+        >
+          <Trash2 className="w-4 h-4" />
+          Delete Account
+        </button>
         <button 
           onClick={() => handleLogout()}
           className="w-full flex items-center gap-3 px-4 py-2 text-white/60 hover:text-white hover:bg-white/5 rounded-xl transition-all text-xs font-medium"
@@ -780,6 +837,81 @@ export default function App() {
                       <Loader2 className="w-4 h-4 animate-spin" />
                     ) : (
                       'Clear All'
+                    )}
+                  </button>
+                </div>
+              </form>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      {/* Delete Account Modal */}
+      <AnimatePresence>
+        {showDeleteAccountModal && (
+          <div className="fixed inset-0 flex items-center justify-center z-[60] p-4">
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setShowDeleteAccountModal(false)}
+              className="fixed inset-0 bg-black/80 backdrop-blur-md"
+            />
+            <motion.div
+              initial={{ scale: 0.9, opacity: 0, y: 20 }}
+              animate={{ scale: 1, opacity: 1, y: 0 }}
+              exit={{ scale: 0.9, opacity: 0, y: 20 }}
+              className="relative w-full max-w-md bg-islamic-green border border-white/10 rounded-3xl p-8 shadow-2xl"
+            >
+              <div className="flex items-center gap-4 mb-6">
+                <div className="w-12 h-12 rounded-2xl bg-red-500/20 flex items-center justify-center text-red-400">
+                  <ShieldCheck className="w-6 h-6" />
+                </div>
+                <div>
+                  <h3 className="text-xl font-bold text-white">Delete Account</h3>
+                  <p className="text-white/60 text-sm">This will permanently delete your account and all consultation history.</p>
+                </div>
+              </div>
+
+              <form onSubmit={handleDeleteAccount} className="space-y-4">
+                <div className="space-y-2">
+                  <label className="text-[10px] font-bold text-white/40 uppercase tracking-widest ml-1">Confirm Password</label>
+                  <div className="relative group">
+                    <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-white/30 group-focus-within:text-islamic-gold transition-colors" />
+                    <input
+                      type="password"
+                      required
+                      value={deleteAccountPassword}
+                      onChange={(e) => setDeleteAccountPassword(e.target.value)}
+                      placeholder="Enter your password"
+                      className="w-full bg-white/5 border border-white/10 text-white pl-11 pr-4 py-3.5 rounded-2xl focus:ring-2 focus:ring-islamic-gold focus:border-transparent outline-none transition-all text-sm"
+                    />
+                  </div>
+                </div>
+
+                {deleteAccountError && (
+                  <div className="p-3 rounded-xl bg-red-500/10 border border-red-500/20 text-red-400 text-xs font-medium">
+                    {deleteAccountError}
+                  </div>
+                )}
+
+                <div className="flex gap-3 pt-2">
+                  <button
+                    type="button"
+                    onClick={() => setShowDeleteAccountModal(false)}
+                    className="flex-1 py-3.5 px-4 rounded-2xl bg-white/5 text-white/60 hover:text-white hover:bg-white/10 transition-all text-sm font-bold"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={deleteAccountLoading}
+                    className="flex-1 py-3.5 px-4 rounded-2xl bg-red-500 text-white hover:bg-red-600 transition-all text-sm font-bold shadow-lg shadow-red-500/20 flex items-center justify-center gap-2 disabled:opacity-50"
+                  >
+                    {deleteAccountLoading ? (
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                    ) : (
+                      'Delete Forever'
                     )}
                   </button>
                 </div>

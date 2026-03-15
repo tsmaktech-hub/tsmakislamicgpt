@@ -109,8 +109,8 @@ app.post("/api/auth/signup", async (req, res) => {
       });
     }
 
-    const token = jwt.sign({ userId: user.id, email, name }, JWT_SECRET);
-    res.json({ token, user: { id: user.id, email, name } });
+    // Return success without token as requested by user to redirect to login
+    res.json({ success: true, message: "Account created successfully. Please log in." });
   } catch (error: any) {
     console.error("Signup internal error:", error);
     res.status(500).json({ error: error.message || "Internal server error during signup" });
@@ -156,6 +156,62 @@ app.post("/api/auth/login", async (req, res) => {
   } catch (error: any) {
     console.error("Login internal error:", error);
     res.status(500).json({ error: error.message || "Internal server error during login" });
+  }
+});
+
+app.post("/api/auth/delete-account", async (req, res) => {
+  const authHeader = req.headers.authorization;
+  if (!authHeader) return res.status(401).json({ error: "Unauthorized" });
+  
+  const { password } = req.body;
+  if (!password) return res.status(400).json({ error: "Password is required" });
+
+  try {
+    const supabase = getSupabase();
+    const token = authHeader.split(" ")[1];
+    
+    const jwtVerify = (jwt as any).verify || (jwt as any).default?.verify;
+    if (!jwtVerify) throw new Error("JWT verify function not found");
+    
+    const decoded = jwtVerify(token, JWT_SECRET) as any;
+    
+    // Verify password
+    const { data: user, error: userError } = await supabase
+      .from("islamic_gpt_users")
+      .select("*")
+      .eq("id", decoded.userId)
+      .single();
+      
+    if (userError || !user) {
+      return res.status(401).json({ error: "User not found" });
+    }
+
+    const bcryptCompare = (bcrypt as any).compare || (bcrypt as any).default?.compare;
+    if (!bcryptCompare) throw new Error("Bcrypt compare function not found");
+    
+    const isValid = await bcryptCompare(password, user.password);
+    if (!isValid) {
+      return res.status(401).json({ error: "Invalid password" });
+    }
+
+    // Delete chats first (foreign key constraint)
+    await supabase
+      .from("islamic_gpt_chats")
+      .delete()
+      .eq("user_id", decoded.userId);
+
+    // Delete user
+    const { error: deleteError } = await supabase
+      .from("islamic_gpt_users")
+      .delete()
+      .eq("id", decoded.userId);
+      
+    if (deleteError) throw deleteError;
+    
+    res.json({ success: true });
+  } catch (error: any) {
+    console.error("Delete account error:", error);
+    res.status(500).json({ error: error.message || "Failed to delete account" });
   }
 });
 
